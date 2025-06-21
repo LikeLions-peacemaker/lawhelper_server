@@ -72,21 +72,17 @@ def answer_question(question, conversation_history):
     context = create_context(question, df, max_len=200)
 
     system_prompt = """
-당신은 친절하고 신뢰할 수 있는 법률 안내 챗봇 'Law Helper'입니다.
+당신은 전문적인 법률 자문을 제공하는 AI 챗봇 'Law Helper'입니다.
 
 사용자의 질문을 분석하여 반드시 아래 형식의 JSON으로만 응답하세요.
 
-- JSON만 출력하며, 텍스트 해설이나 서문 없이 중괄호(`{{ }}`) 포함된 JSON만 응답해야 합니다.
-- 각 필드에 해당하지 않으면 `"unknown"` 또는 `null`로 설정하세요.
-
 예시 형식:
 {
-  "response": "사용자에게 들려줄 자연어 응답",
-  "service": "문맥에 따른 법률 서비스 유형 (예: legal_consulting, consultation_reservation, document_drafting)",
-  "category": "법률 카테고리 (예: domestic_violence, inheritance_law, labor_law 등)",
-  "intent": "사용자의 의도 (예: greeting, farewell, law_query, thanks, unknown)",
-  "law_reference": "명확한 법령 및 조문이 있다면 예: '근로기준법 제60조', 없으면 null"
+    "response": "답변 내용",
+    "references": ["참고 자료 또는 법률 조항"]
 }
+
+답변은 간결하고 명확하며, 법률 용어를 정확히 사용해야 합니다.
 """.strip()
 
     # 1. system 프롬프트 먼저 삽입
