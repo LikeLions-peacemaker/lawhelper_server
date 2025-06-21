@@ -9,6 +9,9 @@ urlpatterns = [
 
     # Chat app URL include
     path('chat/', include('apps.chat.urls')),
+    
+    # Lawyers app URL include
+    path('lawyers/', include('apps.lawyers.urls')),
 
     # Authentication APIs
     path('api/auth/', include('dj_rest_auth.urls')),

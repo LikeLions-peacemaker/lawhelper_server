@@ -33,12 +33,20 @@ def chatbot_api(request):
 
             # GPT 응답 생성
             full_answer = answer_question(user_input, conversation_history)
+            only_response = "응답이 문자열 형식이 아닙니다."
+            if isinstance(full_answer, str):
+                try:
+                    parsed = json.loads(full_answer)
+                    only_response = parsed.get("response", "no response")
+                except json.JSONDecodeError:
+                    only_response = "응답 형식이 올바르지 않습니다."
+            
 
             # GPT 응답 저장
             ChatMessage.objects.create(
                 session=session_obj,
                 sender="bot",
-                message=full_answer
+                message=only_response
             )
 
             # response 부분만 파싱
@@ -83,6 +91,61 @@ def load_history(request):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
     return JsonResponse({"error": "POST만 허용"}, status=405)
+@csrf_exempt
+def session_summary(request, session_id):
+    if request.method == "GET":
+        try:
+            session = ChatSession.objects.get(session_id=session_id)
+            last_msg = session.messages.order_by('-timestamp').first()
+
+            summary = last_msg.message[:100] + "..." if last_msg else "(대화 없음)"
+
+            return JsonResponse({
+                "session_id": session.session_id,
+                "title": session.title,
+                "summary": summary,
+                "sender": last_msg.sender if last_msg else None,
+                "timestamp": last_msg.timestamp.strftime("%Y-%m-%d %H:%M:%S") if last_msg else None
+            })
+        except ChatSession.DoesNotExist:
+            return JsonResponse({"error": "세션을 찾을 수 없습니다."}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "GET method required"}, status=405)
+
+@csrf_exempt
+def chat_summaries(request):
+    if request.method == "GET":
+        try:
+            sessions = ChatSession.objects.all().order_by('-created_at')
+            data = []
+       
+
+
+            for session in sessions:
+                last_msg = session.messages.order_by("-timestamp").first()
+                if last_msg:
+                    summary = last_msg.message[:50] + ("..." if len(last_msg.message) > 50 else "")
+                    try:
+                        parsed = json.loads(last_msg.message)  # 원본 그대로 파싱
+                        response = parsed.get("response", "")
+                        summary = response[:50] + ("..." if len(response) > 50 else "")
+                    except json.JSONDecodeError:
+                        summary = last_msg.message[:50] + ("..." if len(last_msg.message) > 50 else "")
+                    data.append({
+                        "session_id": session.session_id,
+                        "title": session.title,
+                        "summary": summary,
+                        "sender": last_msg.sender,
+                        "timestamp": last_msg.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                    })
+
+            return JsonResponse({"summaries": data})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "GET method required"}, status=405)
 
 
 @csrf_exempt
